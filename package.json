@@ -1,0 +1,22 @@
+{
+  "name": "telegram",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "node-telegram-bot": "^0.1.9",
+    "telegram-node-bot": "^4.0.5",
+    "node-telegram-bot-api": "^0.27.1",
+    "mongoose": "4.10.0",
+    "mongodb": "^2.2.29",
+    "express": "^4.15.3",
+    "password-hash-and-salt": "^0.1.4",
+    "weather-js": "2.0.0",
+    "node-geocoder": "^3.18.0"
+  }
+}
