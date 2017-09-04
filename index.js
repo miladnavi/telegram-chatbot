@@ -2,6 +2,13 @@
  Main App for Telegram API (created by Milad Navidizadeh)
  */
 
+ /* TODO:
+ * - Weather fix
+ * - location (user input)
+ * - wallet
+ * - (code polish)
+*/
+
 //required parameters for bot
 const TelegramBot = require('node-telegram-bot-api');
 const token = '403310626:AAFRZEJu11sC376v3fmgmCYEOLAUEsYX9EE';
