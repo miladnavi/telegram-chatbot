@@ -1,29 +1,28 @@
 /*
- Main App for Telegram API (created by Milad Navidizadeh)
+ * Main App for Telegram API (created by Milad Navidizadeh)
  */
 
 /* TODO:
- * - Weather fix
- * - location (user input)
  * - wallet
- * - (code polish)
+ * - code polish
  */
 
-//required parameters for bot
+
+// required parameters for bot
 const TelegramBot = require('node-telegram-bot-api');
 const token = '406242513:AAHJ4a4TnMf7OmVUuWhtQqLXRagfZ_w4mrE';
 const bot = new TelegramBot(token, {
     polling: true
 });
 
-//required  Methods and Library
-var Weather = require('weather-js');
-var controller = require('./controller/todo');
+
+// required  Methods and Library
+var todoController = require('./controller/todo');
 var weatherController = require('./controller/weather');
 var mongoose = require('mongoose');
-var Todo = require('./models/todo');
 
-//mongoose settings and connection
+
+// mongoose settings and connection
 var db = mongoose.connection;
 db.on('error', function (err) {
     console.log('connection error', err);
@@ -32,154 +31,116 @@ db.once('open', function () {
     console.log('connected.');
 });
 
-//GeoCoder settings for location
+
+// GeoCoder settings for location
 var NodeGeocoder = require('node-geocoder');
-
 var options = {
-    provider: 'google',
+    provider: 'google'
 };
-
 var geocoder = NodeGeocoder(options);
 
-//request and response Methods
-bot.on('Location', (Msg) => {
 
-    console.log(Msg.longitude);
-});
+// Used to determine if bot should listen to default commands or to command-related things (like location for a weather report)
+var botMode = "default";
+
+
+// Main behaviour Tree
 bot.on('message', (msg) => {
-    var Hi = "hi";
-    var Location = "location";
-
-    // switch input statements
-    switch (true) {
-        case msg.text.toLowerCase().indexOf("hi") === 0:
-            bot.sendMessage(msg.chat.id, "Hello dear " + msg.chat.first_name);
+    switch (botMode) {
+        case "weather":
+            weatherBehaviour(msg);
             break;
 
-        case msg.text.toLowerCase().indexOf("location") === 0:
-            geocoder.geocode('29 champs elysée paris', function (err, res) {
-                console.log(res);
-                bot.sendLocation(msg.chat.id, res[0].latitude, res[0].longitude);
-                bot.sendMessage(msg.chat.id, "Here is the point");
-            });
+        case "location":
+            locationBehaviour(msg);
             break;
 
-        case msg.text.toLowerCase().indexOf("/add") === 0:
-            if (!msg.text.slice(5)) {
-                bot.sendMessage(msg.chat.id, "please pass a content for new Todo");
-            } else {
-                controller.addNewTodo(msg);
-                bot.sendMessage(msg.chat.id, "added");
-            }
-            break;
-
-        case msg.text.toLowerCase().indexOf("/get") === 0:
-            var sortedTodoList = "Your Todos:" + "\n";
-            var todoList = [];
-            Todo.find({
-                'userId': msg.chat.id
-            }, function (err, todos) {
-                if (err) throw err;
-                else {
-                    todos.forEach(function (todo) {
-                        todoList.push(todo)
-                    });
-                    sortedTodoList = controller.getAllTodo(todoList, sortedTodoList);
-                    bot.sendMessage(msg.chat.id, sortedTodoList);
-                }
-            });
-            break;
-
-        case msg.text.toLowerCase().indexOf("/delete") === 0:
-            var index = msg.text.slice(8);
-            console.log(typeof (index) + ", " + typeof (msg.text.slice(8)));
-            if (isNaN(index)) {
-                bot.sendMessage(msg.chat.id, "please pass index to delete Todo")
-            } else {
-                var todoList = [];
-                Todo.find({
-                    'userId': msg.chat.id
-                }, function (err, todos) {
-                    if (err) throw err;
-                    else {
-                        todos.forEach(function (todo) {
-                            todoList.push(todo);
-                        });
-                        if (todoList.length == 0) {
-                            bot.sendMessage(msg.chat.id, "There is no Todo to delete")
-                        } else {
-                            if (index > todoList.length) {
-                                bot.sendMessage(msg.chat.id, "There is no Todo with passed number");
-                            } else {
-                                todoList.sort(controller.compare);
-                                index = index - 1;
-                                var targetId = todoList[index]._id;
-                                Todo.findOne({
-                                    'userId': msg.chat.id,
-                                    '_id': targetId
-                                }, function (err, delTodo) {
-                                    if (err) throw err;
-                                    else {
-                                        console.log(delTodo);
-                                        Todo.remove({
-                                            '_id': delTodo._id
-                                        }, function (err, result) {});
-                                    }
-                                });
-                                bot.sendMessage(msg.chat.id, "deleted");
-                            }
-                        }
-                    }
-                });
-            }
-            break;
-
-        case msg.text.toLowerCase().indexOf("weather") === 0:
-            if (!msg.text.slice(8)) {
-                bot.sendMessage("please pass the City or Country name")
-            } else {
-                Weather.find({
-                    search: msg.text.slice(8),
-                    degreeType: 'C'
-                }, function (err, result) {
-                    if (err) {
-                        bot.sendMessage(msg.chat.id, "sorry, I can't find this Location");
-                        console.log(err);
-                    } else if (result.length == 0) {
-                        console.log("Hi")
-                        bot.sendMessage(msg.chat.id, "sorry, I can't find this Location");
-                    } else {
-                        console.log(result);
-                        bot.sendMessage(msg.chat.id, weatherController.createWeatherReport(result));
-                    }
-                });
-            }
-            break;
-
+        case "default":
         default:
-            bot.sendMessage(msg.chat.id, "I didn't understand that :(");
+            defaultBehaviour(msg);
     }
 });
 
 
-//Handel pic message
+// Handel pic message
 bot.onText(/\/sendpic/, (msg) => {
-
     bot.sendPhoto(msg.chat.id, "https://ibb.co/dkvRza", {
         caption: "Here we go ! \nThis is just a caption "
     });
-
 });
 
-//Handel button message
+// Handel button message
 bot.onText(/\/start/, (msg) => {
-
     bot.sendMessage(msg.chat.id, "Welcome", {
         "reply_markup": {
             "keyboard": [
-                ["Location", "Weather"],
-                ["I'm Robot"]
+                ["Location", "Weather"]
             ]
         }
     });
 });
+
+
+function defaultBehaviour(msg) {
+    switch (true) {
+        // Hi Response
+        case msg.text.toLowerCase().indexOf("hi") === 0:
+            bot.sendMessage(msg.chat.id, "Hello dear " + msg.chat.first_name);
+            break;
+
+            // 'location'
+        case msg.text.toLowerCase().indexOf("location") === 0:
+            bot.sendMessage(msg.chat.id, "Type in an Adress");
+            botMode = "location";
+            break;
+
+            // '/add'
+        case msg.text.toLowerCase().indexOf("/add") === 0:
+            todoController.addNewTodo(msg, (info) => {
+                bot.sendMessage(msg.chat.id, info);
+            });
+            break;
+
+            // '/get'
+        case msg.text.toLowerCase().indexOf("/get") === 0:
+            todoController.getAllTodo(msg, (todos) => {
+                bot.sendMessage(msg.chat.id, todos);
+            });
+            break;
+
+            // '/delete'
+        case msg.text.toLowerCase().indexOf("/delete") === 0:
+            todoController.deleteTodo(msg, (info) => {
+                bot.sendMessage(msg.chat.id, info);
+            });
+            break;
+
+            // 'weather'
+        case msg.text.toLowerCase().indexOf("weather") === 0:
+            bot.sendMessage(msg.chat.id, "Please enter an Adress.");
+            botMode = "weather";
+            break;
+
+            // unknown command
+        default:
+            bot.sendMessage(msg.chat.id, "Sorry, I didn't understand that :(");
+    }
+}
+
+
+function weatherBehaviour(msg) {
+    weatherController.sendWeatherInfo(msg.text, (weatherInfo) => {
+        bot.sendMessage(msg.chat.id, weatherInfo);
+    });
+    botMode = "default";
+}
+
+
+function locationBehaviour(msg) {
+    geocoder.geocode(msg.text, function (err, res) {
+        console.log(res);
+        bot.sendLocation(msg.chat.id, res[0].latitude, res[0].longitude);
+        bot.sendMessage(msg.chat.id, "Here is the point");
+    });
+    botMode = "default";
+}
