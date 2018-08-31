@@ -9,8 +9,7 @@
 * Google something for you
 
 ###### Configuration and Install
-+ Install and run MongoDB: <pre><code> https://www.mongodb.com/download-center#atlas <code><pre>
-+ Install dependencies: <pre><code> npm install <pre><code>
-
++ Install and run MongoDB: <pre><code> https://www.mongodb.com/download-center#atlas </code></pre>
++ Install dependencies: <pre><code> npm install </code></pre>
 ###### Run the App: 
-+ Run: <pre><code> node index.js <code><pre>
++ Run: <pre><code> node index.js </code></pre>
